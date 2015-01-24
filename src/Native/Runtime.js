@@ -34,7 +34,7 @@ if (!Elm.fullscreen) {
              * we can manage this.
              */
             var timer = {
-                programStart : Date.now(),
+                programStart : Date.now(), // after a hot-swap, this will contain the time when that hot-swap happened
                 now: function() {
                     return Date.now();
                 }
@@ -425,6 +425,10 @@ if (!Elm.fullscreen) {
             var canSwap = depthFirstTraversals(similar, from.inputs, to.inputs);
             if (canSwap) {
                 depthFirstTraversals(swap, from.inputs, to.inputs);
+                if (typeof to.Time !== 'undefined' && typeof from.Time !== 'undefined')
+                {
+                    to.Time.values.startTime = from.Time.values.startTime;
+                }
             }
             from.node.parentNode.replaceChild(to.node, from.node);
 

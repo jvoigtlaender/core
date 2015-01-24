@@ -2,7 +2,7 @@ module Time
     ( Time, millisecond, second, minute, hour
     , inMilliseconds, inSeconds, inMinutes, inHours
     , fps, fpsWhen, every
-    , timestamp, delay, since
+    , startTime, timestamp, delay, since
     ) where
 
 {-| Library for working with time.
@@ -15,7 +15,7 @@ module Time
 @docs fps, fpsWhen, every
 
 # Timing
-@docs timestamp, delay, since
+@docs startTime, timestamp, delay, since
 
 -}
 
@@ -108,3 +108,8 @@ will update one second later than any mouse click.
 -}
 delay : Time -> Signal a -> Signal a
 delay = Native.Time.delay
+
+{-| The timestamp of the start of the program.
+-}
+startTime : Time
+startTime = Native.Time.startTime

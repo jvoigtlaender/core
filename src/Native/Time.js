@@ -92,6 +92,7 @@ Elm.Native.Time.make = function(localRuntime) {
     }
 
     return localRuntime.Native.Time.values = {
+        startTime : localRuntime.timer.programStart, // after a hot-swap, this will contain the time when that hot-swap happened, but the corresponding value in localRuntime.Time will still contain the start time of the original program
         fpsWhen: F2(fpsWhen),
         fps: fps,
         every: every,
