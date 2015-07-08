@@ -114,6 +114,31 @@ Elm.Native.Signal.make = function(localRuntime) {
 
 	// MAP
 
+	function map(func, a)
+	{
+		var node = {
+			id: Utils.guid(),
+			name: 'map1',
+			value: func(a.value),
+			parents: [a],
+			kids: []
+		};
+
+		node.notify = function(timestamp, parentUpdate, parentID)
+		{
+			if (parentUpdate)
+			{
+				node.value = func(a.value);
+			}
+			broadcastToKids(node, timestamp, parentUpdate);
+		};
+
+		a.kids.push(node);
+
+		return node;
+	}
+
+
 	function mapMany(refreshValue, args)
 	{
 		var node = {
@@ -152,16 +177,6 @@ Elm.Native.Signal.make = function(localRuntime) {
 		}
 
 		return node;
-	}
-
-
-	function map(func, a)
-	{
-		function refreshValue()
-		{
-			return func(a.value);
-		}
-		return mapMany(refreshValue, [a]);
 	}
 
 
