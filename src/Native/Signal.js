@@ -128,7 +128,7 @@ Elm.Native.Signal.make = function(localRuntime) {
 		{
 			if (parentUpdate)
 			{
-				node.value = func(timestamp, signal.value);
+				node.value = func(timestamp, signal.value, node.value);
 			}
 			broadcastToKids(node, timestamp, parentUpdate);
 		};
@@ -143,7 +143,9 @@ Elm.Native.Signal.make = function(localRuntime) {
 
 	function map(func, signal)
 	{
-		return pipe('map1', func(signal.value), function(timestamp, v) { return func(v); }, signal);
+		return pipe('map1', func(signal.value),
+				function(timestamp, sv, nv) { return func(sv); },
+				signal);
 	}
 
 
@@ -233,26 +235,9 @@ Elm.Native.Signal.make = function(localRuntime) {
 
 	function foldp(update, state, signal)
 	{
-		var node = {
-			id: Utils.guid(),
-			name: 'foldp',
-			parents: [signal],
-			kids: [],
-			value: state
-		};
-
-		node.notify = function(timestamp, parentUpdate, parentID)
-		{
-			if (parentUpdate)
-			{
-				node.value = A2( update, signal.value, node.value );
-			}
-			broadcastToKids(node, timestamp, parentUpdate);
-		};
-
-		signal.kids.push(node);
-
-		return node;
+		return pipe('foldp', state,
+				function(timestamp, sv, nv) { return A2( update, sv, nv ); },
+				signal);
 	}
 
 
@@ -260,7 +245,9 @@ Elm.Native.Signal.make = function(localRuntime) {
 
 	function timestamp(signal)
 	{
-		return pipe('timestamp', Utils.Tuple2(localRuntime.timer.programStart, signal.value), Utils.Tuple2, signal);
+		return pipe('timestamp', Utils.Tuple2(localRuntime.timer.programStart, signal.value),
+				function(timestamp, sv, nv) { return Utils.Tuple2(timestamp, sv); },
+				signal);
 	}
 
 
