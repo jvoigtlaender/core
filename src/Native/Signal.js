@@ -126,11 +126,17 @@ Elm.Native.Signal.make = function(localRuntime) {
 
 		node.notify = function(timestamp, parentUpdate, parentID)
 		{
+			var update = false;
 			if (parentUpdate)
 			{
-				node.value = func(timestamp, signal.value, node.value);
+				var result = func(timestamp, signal.value, node.value);
+				if (result.update)
+				{
+					node.value = result.value;
+					update = true;
+				}
 			}
-			broadcastToKids(node, timestamp, parentUpdate);
+			broadcastToKids(node, timestamp, update);
 		};
 
 		signal.kids.push(node);
@@ -144,7 +150,7 @@ Elm.Native.Signal.make = function(localRuntime) {
 	function map(func, signal)
 	{
 		return pipe('map1', func(signal.value),
-				function(timestamp, sv, nv) { return func(sv); },
+				function(timestamp, sv, nv) { return { update: true, value: func(sv) }; },
 				signal);
 	}
 
@@ -236,7 +242,7 @@ Elm.Native.Signal.make = function(localRuntime) {
 	function foldp(update, state, signal)
 	{
 		return pipe('foldp', state,
-				function(timestamp, sv, nv) { return A2( update, sv, nv ); },
+				function(timestamp, sv, nv) { return { update: true, value: A2( update, sv, nv ) }; },
 				signal);
 	}
 
@@ -246,7 +252,7 @@ Elm.Native.Signal.make = function(localRuntime) {
 	function timestamp(signal)
 	{
 		return pipe('timestamp', Utils.Tuple2(localRuntime.timer.programStart, signal.value),
-				function(timestamp, sv, nv) { return Utils.Tuple2(timestamp, sv); },
+				function(timestamp, sv, nv) { return { update: true, value: Utils.Tuple2(timestamp, sv) }; },
 				signal);
 	}
 
@@ -335,32 +341,18 @@ Elm.Native.Signal.make = function(localRuntime) {
 	function filterMap(toMaybe, base, signal)
 	{
 		var maybe = toMaybe(signal.value);
-		var node = {
-			id: Utils.guid(),
-			name: 'filterMap',
-			value: maybe.ctor === 'Nothing' ? base : maybe._0,
-			parents: [signal],
-			kids: []
-		};
 
-		node.notify = function(timestamp, parentUpdate, parentID)
-		{
-			var update = false;
-			if (parentUpdate)
-			{
-				var maybe = toMaybe(signal.value);
-				if (maybe.ctor === 'Just')
+		return pipe('filterMap', maybe.ctor === 'Nothing' ? base : maybe._0,
+				function(timestamp, sv, nv)
 				{
-					update = true;
-					node.value = maybe._0;
-				}
-			}
-			broadcastToKids(node, timestamp, update);
-		};
-
-		signal.kids.push(node);
-
-		return node;
+					var maybe = toMaybe(sv);
+					if (maybe.ctor === 'Just')
+					{
+						return { update: true, value: maybe._0 };
+					}
+					return { update: false };
+				},
+				signal);
 	}
 
 
@@ -416,28 +408,16 @@ Elm.Native.Signal.make = function(localRuntime) {
 
 	function dropRepeats(signal)
 	{
-		var node = {
-			id: Utils.guid(),
-			name: 'dropRepeats',
-			value: signal.value,
-			parents: [signal],
-			kids: []
-		};
-
-		node.notify = function(timestamp, parentUpdate, parentID)
-		{
-			var update = false;
-			if (parentUpdate && !Utils.eq(node.value, signal.value))
-			{
-				node.value = signal.value;
-				update = true;
-			}
-			broadcastToKids(node, timestamp, update);
-		};
-
-		signal.kids.push(node);
-
-		return node;
+		return pipe('dropRepeats', signal.value,
+				function(timestamp, sv, nv)
+				{
+					if (!Utils.eq(nv, sv))
+					{
+						return { update: true, value: sv };
+					}
+					return { update: false };
+				},
+				signal);
 	}
 
 
