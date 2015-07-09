@@ -121,19 +121,44 @@ Elm.Native.Signal.make = function(localRuntime) {
 			name: name,
 			value: value,
 			parents: [signal],
-			kids: []
+			kids: [],
+			isPipe: true,
+			incoming: signal,
+			inters: [],
+			funcs: [func]
 		};
 
 		node.notify = function(timestamp, parentUpdate, parentID)
 		{
-			var update = false;
-			if (parentUpdate)
+			var update = parentUpdate;
+			var value = node.incoming.value;
+			var i = node.inters.length;
+			var result;
+
+			while (update && i-- > 0)
 			{
-				var result = func(timestamp, signal.value, node.value);
+				result = node.funcs[i+1](timestamp, value, node.inters[i]);
+				if (result.update)
+				{
+					value = result.value;
+					node.inters[i] = value;
+				}
+				else
+				{
+					update = false;
+				}
+			}
+
+			if (update)
+			{
+				result = func(timestamp, value, node.value);
 				if (result.update)
 				{
 					node.value = result.value;
-					update = true;
+				}
+				else
+				{
+					update = false;
 				}
 			}
 			broadcastToKids(node, timestamp, update);
