@@ -155,6 +155,7 @@ if (!Elm.fullscreen) {
 			var rootNode = { kids: inputs };
 			trimDeadNodes(rootNode);
 			inputs = rootNode.kids;
+			compressPipes(inputs);
 			filterListeners(inputs, listeners);
 
 			addReceivers(elm.ports);
@@ -210,6 +211,60 @@ if (!Elm.fullscreen) {
 			code.appendChild(document.createElement('br'));
 			code.appendChild(document.createTextNode("Open the developer console for more details."));
 			return code;
+		}
+
+
+		//// COMPRESSING THE SIGNAL GRAPH ////
+
+		function compressPipes(queue)
+		{
+			queue = queue.slice(0);
+
+			var seen = [];
+			while (queue.length > 0)
+			{
+				var node = queue.pop();
+				var id = node.id;
+				if (seen.indexOf(id) < 0)
+				{
+					var kids = node.kids || [];
+
+					if (node.isPipe)
+					{
+						var name = node.name;
+						var parents = node.parents;
+						var incoming = node.incoming;
+						var inters = node.inters;  // = [], actually
+						var funcs = node.funcs;  // will have exactly one element
+							
+						while (kids.length == 1 && kids[0].isPipe)
+						{
+							var kid = kids[0];
+							name = name + '->' + kid.name;
+							inters.unshift(node.value);
+							funcs.unshift(kid.funcs[0]);  // kid.funcs will have exactly one element
+							node = kid;
+							kids = node.kids || [];
+						}
+
+						if (id !== node.id)
+						{
+							var i = incoming.kids.length;
+							do { i--; } while (incoming.kids[i].id !== id);
+							incoming.kids[i] = node;
+
+							node.name = name;
+							node.parents = parents;
+							node.incoming = incoming;
+							node.inters = inters;
+							node.funcs = funcs;
+						}
+					}
+
+					queue = queue.concat(kids);
+					seen.push(id);
+				}
+			}
 		}
 
 
